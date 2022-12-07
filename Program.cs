@@ -7,6 +7,28 @@ using System.Diagnostics;
 
 namespace ConsoleApp6
 
+    /* 
+    This program takes a sudoku as input, represented as a string of 81 numbers, where every sequence of 9 numbers is a new row
+    The 0's of this input are empty boxes.
+
+    After accepting the input, it fills all the 9, 3x3 blocks with one of each number not already in the block, such that every number 1-9 is present in every block,
+    at this point the sudoku is nowhere near solved
+
+    After filling in the sudoku, an algorithm like iterated local search is used to minimise the heuristic value
+
+    The heuristic value is the sum of all numbers NOT present in every row and column.
+
+    The algorithm works like this:
+    1. Choose random 3x3 block
+    2. Try all possible swaps inside that 3x3 block
+    3. Choose swap that results in lowest heuristic value, iff that value is lower than the current lowest score.
+
+    If we reach a plateau/local maxima, we use random walk for a certain amount of times to get away from it.
+
+    Most sudoku's that were tested, were solved in under 2 minutes
+
+    */
+
 {
     class Program
     {
@@ -17,7 +39,7 @@ namespace ConsoleApp6
             string input = Console.ReadLine();
 
             // n is the amount of times the sudoku solver tries to solve the input
-            int n = 25;
+            int n = 100;
 
             for (int i = 0; i < n; i++)
             {
@@ -26,6 +48,7 @@ namespace ConsoleApp6
                 stopwatch.Start();
 
                 Sudoku test = new Sudoku(input);
+                test.Visualize();
                 SudokuSolver to_solve = new SudokuSolver(test);
                 to_solve.Solve();
 
@@ -58,8 +81,10 @@ namespace ConsoleApp6
             public Sudoku(string s)
             {
                 this.SudokuFromString(s);
+                Visualize();
                 FillSudoku();
                 EvaluateAll();
+             
                 //Console.WriteLine(eval_tot);
             }
 
@@ -118,16 +143,17 @@ namespace ConsoleApp6
                 {
                     for (int x1 = x; x1 <= x + 2; x1++)
                     {
-                        //LATER WELLICHT UITBREIDEN NAAR RANDOM, NU GEWOON LIJSTJE AFLOPEN
                         if (this.sudoku[x1, y1, 1] == 0)
                         {
-                            //this.sudoku[x1, y1, 0] = nrs[0];
-                            //nrs.RemoveAt(0);
+                            this.sudoku[x1, y1, 0] = nrs[0];
+                            nrs.RemoveAt(0);
 
+                            /*
                             Random r = new Random();
                             int index = r.Next(nrs.Count());
                             this.sudoku[x1, y1, 0] = nrs[index];
                             nrs.RemoveAt(index);
+                            */
                         }
                     }
                 }
@@ -160,8 +186,8 @@ namespace ConsoleApp6
                 x2 = p2.X;
                 y2 = p2.Y;
 
-                if (Math.Abs(x1 - x2) > 3 | Math.Abs(y1-y2) > 3) Console.WriteLine("ERROR: Can't swap items in between blocks"); //Deze error message werkt nog niet helemaal maar hoeft eigenlijk ooko niet helemaal perfect te werken
-                if (sudoku[x1, y1, 1] == 1 | sudoku[x2, y2, 1] == 1) Console.WriteLine("ERROR: Can't swap fixed items");
+                //(Math.Abs(x1 - x2) > 3 | Math.Abs(y1-y2) > 3) Console.WriteLine("ERROR: Can't swap items in between blocks"); //Deze error message werkt nog niet helemaal maar hoeft eigenlijk ooko niet helemaal perfect te werken
+                //(sudoku[x1, y1, 1] == 1 | sudoku[x2, y2, 1] == 1) Console.WriteLine("ERROR: Can't swap fixed items");
 
                 int tmp = sudoku[x1, y1, 0];
                 sudoku[x1, y1, 0] = sudoku[x2, y2, 0];
@@ -173,7 +199,9 @@ namespace ConsoleApp6
             public void Evaluate(string direction, int n) //GEEFT GEEN ERRORS
             //Kan waarschijnlijk sneller
             {
-                //Amount is an array with length 9, where each index corresponds with one of the numbers 1 to 9
+                //arr is an array with length 9, where each index corresponds with one of the numbers 1 to 9
+                //We will go through the row/column that is being checked and add 1 to the index corresponding to the number we encounter while checking
+                //After that we can count all indexes that have value 0 and see how many numbers are missing
                 int[] arr = new int[] {0,0,0,0,0,0,0,0,0};
 
                 //Checks what direction is being checked in then checks that row/column. Then loops through the row/column and adds up the corresponding number in the amount array
@@ -258,6 +286,7 @@ namespace ConsoleApp6
                 List<Point> coords = new List<Point>();
                 int x = p.X;
                 int y = p.Y;
+
                 for (int y1 = y; y1 <= y + 2; y1++)
                 {
                     for (int x1 = x; x1 <= x + 2; x1++)
@@ -358,7 +387,7 @@ namespace ConsoleApp6
                     to_solve.Swap(action.Item1, action.Item2);
 
                     //Console.WriteLine("Start met evaluaten");
-                    to_solve.EvalAfterSwap(action.Item1, action.Item2);
+                    //to_solve.EvalAfterSwap(action.Item1, action.Item2);
 
                     //Console.WriteLine("Check of huidige swap beter dan beste");
                     if (to_solve.eval_tot < top.Item3)
